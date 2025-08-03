@@ -1,8 +1,7 @@
 // dynamicHandler.js
 
-// 👀 Waits until a form input appears in the DOM, then autofills it
-
-// Utility: Poll for an element until it shows up or timeout
+// 🧪 Strategy 1: Polling using setInterval
+// Wait for an element to appear (e.g., after delayed load)
 function waitForElement(selector, timeout = 5000) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
@@ -10,12 +9,12 @@ function waitForElement(selector, timeout = 5000) {
       const el = document.querySelector(selector);
       if (el) {
         clearInterval(interval);
-        resolve(el);
+        resolve(el); // ✅ Found the element
       } else if (Date.now() - start > timeout) {
         clearInterval(interval);
-        reject("Timeout: element not found");
+        reject("Timeout: element not found"); // ❌ Gave up after timeout
       }
-    }, 100); // check every 100ms
+    }, 100); // Check every 100ms
   });
 }
 
@@ -23,6 +22,30 @@ function waitForElement(selector, timeout = 5000) {
 waitForElement('input[type="email"]')
   .then((emailInput) => {
     emailInput.value = "test@example.com";
-    console.log("Email autofilled");
+    console.log("✅ Email autofilled using polling");
   })
-  .catch((err) => console.error(err));
+  .catch((err) => console.error("Polling error:", err));
+
+
+// 🧪 Strategy 2: Using MutationObserver
+// Detect when a new node matching your selector is added to the DOM
+function observeElement(selector, callback) {
+  const observer = new MutationObserver((mutations, obs) => {
+    const el = document.querySelector(selector);
+    if (el) {
+      callback(el);          // ✅ Found it, run callback
+      obs.disconnect();      // 🛑 Stop observing
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,        // Look for new elements added to DOM
+    subtree: true           // Include nested elements
+  });
+}
+
+// Example usage:
+observeElement('input[type="email"]', (emailInput) => {
+  emailInput.value = "test@example.com";
+  console.log("✅ Email autofilled using MutationObserver");
+});
